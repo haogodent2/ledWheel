@@ -6,8 +6,13 @@ import matplotlib.pyplot as plt
 import matplotlib.image as mpimg
 import math
 
-# preprocessing
-# down convert image to 64 x smaller size
+
+img = Image.open("/Users/haochen/Desktop/Haos/ledWheel/test_images/test_image.bmp")
+img = Image.open("/Users/haochen/Desktop/Haos/ledWheel/test_images/lena.bmp")
+
+DOWN_IMG_SIZE = 128, 128
+img.thumbnail(DOWN_IMG_SIZE, Image.ANTIALIAS)
+
 # convert image from cartesian to polar
 # build table for every degree based on # of leds (angle + 3*ledsCount)
 
@@ -16,51 +21,49 @@ import math
 # sync display loop with ratation rate
 # use time elapsed since last cycle to choose index of which colors to display
 
-
-im = Image.open("/Users/haochen/Desktop/Haos/ledWheel/test_images/test_image.bmp")
-#im = Image.open("/Users/haochen/Desktop/Haos/ledWheel/test_images/lena.bmp")
-
-p = np.array(im)
-
-
-
-# test case
-#p = np.zeros([9,9]);
-#p[4,:] = np.ones([1,9]);
-#p[:,4] = np.ones([1,9]);
-
-img_dim = p.shape;
-origin = [math.ceil(img_dim[0]/2.0)-1, math.ceil(img_dim[1]/2.0)-1];
+img_matrix = np.array(img)
+img_dim = img_matrix.shape
+origin = [math.ceil(img_dim[0]/2.0)-1, math.ceil(img_dim[1]/2.0)-1]
 
 # take each index and calculate the corresponding polar values
 # this assumes polar max radius = center to image corner
-polar_table =  np.zeros([img_dim[0]*img_dim[1],5]);
-index = 0;
+polar_table =  np.zeros([img_dim[0]*img_dim[1],5])
+
+index = 0
+
 for row in range(img_dim[0]):
-	dy = row - origin[0];
-	for col in range(img_dim[1]):
-		dx = col - origin[1];
-		r = math.sqrt(math.pow(dx, 2)+math.pow(dy, 2));
-		# right axis = zero radian, clockwise positive in radian
-		#theta = math.degrees((math.atan2(dy,dx)));
-		theta = math.atan2(dy,dx);
-		
-		# for testing
-		#polar_table[index] = [theta, r, p[row][col]]; 
+    dy = row - origin[0]
+    for col in range(img_dim[1]):
+        dx = col - origin[1]
+        r = math.sqrt(math.pow(dx, 2)+math.pow(dy, 2))
+        # right axis = zero radian, clockwise positive in radian
+        theta = math.degrees((math.atan2(dy,dx)))
+        if theta < 0.0: # 0 to 360
+            theta += 360
+        # [theta, radius, r, g, b];
+        polar_table[index] = [theta, r, img_matrix[row][col][0], img_matrix[row][col][1], img_matrix[row][col][2]]
 
-		# for actual image
-		#  [theta, radius, r, g, b];
-		polar_table[index] = [theta, r, p[row][col][0], p[row][col][1], p[row][col][2]]; 
-		
-		# put a dot down when there is color for testing
-		if p[row][col][0]>0 | p[row][col][1]>0 | p[row][col][2]>0:
-			polar_table[index,2] = 1; 
-		index = index+1;
+        # put a dot down when there is color for testing
+        #if img_matrix[row][col][0]<>0 | img_matrix[row][col][1]<>0 | img_matrix[row][col][2]<>0:
+        #    polar_table[index,2] = 1
+        index = index+1
 
+
+polar_table_resampled = np.zeros([360,48])
+
+# find nearest rgb value for each of the 16 leds
+for angle in range(0,360):
+    for led_index in range(0,16):
+        test_radius = led_index*(128/16.0)
+        idx = (np.abs(angle-polar_table[:,0])+np.abs(test_radius-polar_table[:,1])).argmin()
+        polar_table_resampled[angle][(led_index*3):(led_index*3+3)] = polar_table[idx,2:5]
+
+polar_table_resampled.astype(int)
+np.savetxt("/Users/haochen/Desktop/Haos/ledWheel/test_images/test.csv",polar_table_resampled, delimiter=',')
+#
 ax = plt.subplot(111, projection='polar')
-ax.set_theta_direction(-1);
-ax.scatter(polar_table[:,0], polar_table[:,1], s=polar_table[:,2])
+ax.set_theta_direction(-1)
+ax.scatter(polar_table[:,0]*(3.14/180), polar_table[:,1], s=polar_table[:,2])
 #ax.grid(True)
 plt.show()
 
-		
