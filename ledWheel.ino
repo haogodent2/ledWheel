@@ -1,15 +1,19 @@
+#include <avr/pgmspace.h>
 #include "NS_Rainbow.h"
-#define PIN 9
+#define LED_PIN 9
 #define N_CELL 16
+//#define DEVMODE 1
+
 const uint8_t INTERRUPT_PIN = 2;
 volatile unsigned long crossing_millis = 0;
 volatile unsigned long previous_crossing_millis = 0;
 uint8_t last_position = 0;
 uint8_t curr_position = 0;
-const uint8_t BRIGHTNESS = 50;
+const uint8_t BRIGHTNESS = 25;
 volatile unsigned long test_val = 0;
+#define progMemBuffer = 48;
 
-const uint8_t IMAGE[][48] = {
+const PROGMEM uint8_t IMAGE[][48]  = {
 {255,255,255,255,255,255,255,255,255,255,255,255,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0},
 {255,255,255,255,255,255,255,255,255,255,255,255,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0},
 {255,255,255,255,255,255,255,255,255,255,255,255,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0},
@@ -66,28 +70,21 @@ class Ledplayer
     {
      ratio = ratio - (int)ratio;
     }
-    //Serial.println(ratio);
     curr_position = ratio*(DIVISIONS);
     if (curr_position == last_position)
     {
-      //Serial.println(curr_position);
     }
     else
     {
       for(int idx=0; idx<17; idx++)
      {
-       //Serial.print(IMAGE[0][idx*3]);
-  //Serial.print(' ');
-  //Serial.print(IMAGE[curr_position][idx*3+1]);
-  //Serial.print(' ');
-  //Serial.println(IMAGE[curr_position][idx*3+2];
-  //delay(30);  
+      uint8_t R = pgm_read_byte(&(IMAGE[curr_position][idx*3]));
+      uint8_t G = pgm_read_byte(&(IMAGE[curr_position][idx*3+1]));
+      uint8_t B = pgm_read_byte(&(IMAGE[curr_position][idx*3+2]));
 
-        ns_stick.setColor(idx, IMAGE[curr_position][idx*3],IMAGE[curr_position][idx*3+1],IMAGE[curr_position][idx*3+2]);    
-        //ns_stick.setColor(idx, 0,0,255);    
-
+        //ns_stick.setColor(idx, IMAGE[curr_position][idx*3],IMAGE[curr_position][idx*3+1],IMAGE[curr_position][idx*3+2]);    
+        ns_stick.setColor(idx, R, G, B);
      }
-      //Serial.println(curr_position);
 
       last_position = curr_position;
       ns_stick.show(); 
@@ -100,47 +97,36 @@ class Ledplayer
     crossing_millis = millis();
   }
 
-  void test()
-  {
-    test_val++;
-  }
 };
 
 // Parameter 1 = number of cells (max: 512)
 // Parameter 2 = Arduino pin number (default pin: 9)
 //NS_Rainbow ns_stick = NS_Rainbow(N_CELL);
-NS_Rainbow ns_stick = NS_Rainbow(N_CELL,PIN);
+NS_Rainbow ns_stick = NS_Rainbow(N_CELL,LED_PIN);
 Ledplayer player1 = Ledplayer();
 
 void OnCrossingUpdate()
 {
   player1.OnCrossingUpdate();
-//  player1.test();
 }
 
 
 void setup()
 {
-  delay(100);
   ns_stick.begin();
   ns_stick.setBrightness(BRIGHTNESS);  // range: 0 ~ 255, default: 255  
   pinMode(INTERRUPT_PIN, INPUT_PULLUP);
   attachInterrupt(digitalPinToInterrupt(INTERRUPT_PIN), OnCrossingUpdate, RISING);  
-  //Serial.begin(9600);
+
+  #if defined(DEVMODE)
+    Serial.begin(9600);
+  #endif
 }
 
 void loop() 
 {
   player1.LEDUpdate(ns_stick);
-
-  // test code
-  //Serial.println(test_val);
-  //delay(1000);
-  //Serial.flush();
-  //Serial.print(previous_crossing_millis);
-  //Serial.print(', cross_millis->');
-  //Serial.println(crossing_millis);  
-}
+}  
 
 
 

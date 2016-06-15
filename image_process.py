@@ -6,8 +6,8 @@ import matplotlib.pyplot as plt
 import math
 
 
-img = Image.open("/Users/haochen/Desktop/Haos/ledWheel/test_images/not_happy.png")
-#img = Image.open("/Users/haochen/Desktop/Haos/ledWheel/test_images/img_test.bmp")
+#img = Image.open("/Users/haochen/Desktop/Haos/ledWheel/test_images/not_happy.png")
+img = Image.open("/Users/haochen/Desktop/Haos/ledWheel/test_images/img_test.bmp")
 img = img.convert('RGB')
 DOWN_IMG_SIZE = 128, 128
 img.thumbnail(DOWN_IMG_SIZE, Image.ANTIALIAS)
@@ -48,8 +48,10 @@ for row in range(img_dim[0]):
         index = index+1
 
 
+scan_divisons = 360
+
 # find nearest rgb value for each of the 16 leds 1 degree
-polar_table_resampled = np.zeros([360,48])
+polar_table_resampled = np.zeros([scan_divisons,48])
 for angle in range(0,360):
     for led_index in range(0,16):
         test_radius = led_index*(128/16.0)
@@ -57,9 +59,9 @@ for angle in range(0,360):
         polar_table_resampled[angle][(led_index*3):(led_index*3+3)] = polar_table[idx,2:5]
 
 
-# find nearest rgb value for each of the 16 leds 10 degree
-polar_table_resampled = np.zeros([36,48])
-for angle in range(0,36):
+# find nearest rgb value for each of the 16 leds by 360/division arc angles
+polar_table_resampled = np.zeros([scan_divisons,48])
+for angle in range(0,scan_divisons):
     for led_index in range(0,16):
         test_radius = led_index*(128/16.0)
         idx = (np.abs(angle*10-polar_table[:,0])+np.abs(test_radius-polar_table[:,1])).argmin()
@@ -67,7 +69,7 @@ for angle in range(0,36):
 
 
 polar_table_resampled.astype(int)
-np.savetxt("/Users/haochen/Desktop/Haos/ledWheel/test_images/test.csv",polar_table_resampled, delimiter=',')
+np.savetxt("/Users/haochen/Desktop/Haos/ledWheel/test_images/test.csv",polar_table_resampled,fmt='%i', delimiter=',')
 #
 ax = plt.subplot(111, projection='polar')
 ax.set_theta_direction(-1)
