@@ -2,7 +2,7 @@ from PIL import Image
 import numpy as np
 import matplotlib.pyplot as plt
 import math
-import csv
+
 
 #defs
 DEGREE_TO_RAD = math.pi/180

@@ -191,22 +191,18 @@ const PROGMEM uint8_t IMAGE[][3*NUM_LEDS]  = {
 };
 
 
-const int DIVISIONS = sizeof(IMAGE)/sizeof(IMAGE[0]);
+const uint16_t DIVISIONS = (sizeof(IMAGE)/sizeof(IMAGE[0])); // 180 becomes 18000 for int math
 const uint8_t INTERRUPT_PIN = 2;
-const int DIVISIONS_div2 = DIVISIONS/2; 
+const uint16_t DIVISIONS_div2 = DIVISIONS/2; 
 const uint8_t NUM_LEDS_div2 = NUM_LEDS/2;
-volatile unsigned long crossing_millis = 0;
-volatile unsigned long previous_crossing_millis = 0;
+volatile uint32_t crossing_millis = 0;
+volatile uint32_t previous_crossing_millis = 0;
 
-uint8_t last_position = 0;
-uint8_t curr_position = 0;
-int position = 0;
+uint16_t last_position = 0;
+uint16_t curr_position = 0;
+uint16_t position = 0;
 const uint8_t BRIGHTNESS = 30;
-const uint8_t led_offset = 16;
 CRGB leds[NUM_LEDS];
-
-volatile unsigned long test_val = 0;
-
 
 void OnCrossingUpdate()
 {
@@ -214,13 +210,34 @@ void OnCrossingUpdate()
 	crossing_millis = millis();
 }
 
+uint32_t ReduceValue(uint32_t val, uint32_t test_val)
+{
+	if (val<test_val)
+	{
+		return val;
+	}
+	else{
+		val = val-test_val;
+		return ReduceValue(val, test_val);
+	}
+}
+
+//def reduceVal(val, testVal):
+//	if val< testVal:
+//		return val
+//	else:
+//		val = val-testVal
+//	return reduceVal(val, testVal)
+
+//test = reduceVal(5040,1000)
+
+
 
 void setup()
 {
-
   FastLED.addLeds<LED_TYPE, BGR>(leds, NUM_LEDS);
   FastLED.setBrightness(BRIGHTNESS);
-  set_max_power_in_volts_and_milliamps(5, 500);               // FastLED Power management set at 5V, 500mA
+  //set_max_power_in_volts_and_milliamps(5, 500);               // FastLED Power management set at 5V, 500mA
   pinMode(INTERRUPT_PIN, INPUT_PULLUP);
   attachInterrupt(digitalPinToInterrupt(INTERRUPT_PIN), OnCrossingUpdate, RISING); 
   Serial.begin(9600);
@@ -229,18 +246,16 @@ void setup()
 
 void loop() 
 {
-	uint16_t i;
+	uint8_t i;
 	uint8_t R;
 	uint8_t G;
 	uint8_t B;
-	float ratio = (millis()-crossing_millis) / (float)(crossing_millis-previous_crossing_millis);
+	uint32_t elapsed_time_x100 = (millis()-crossing_millis)*1000;
+	uint32_t progress = elapsed_time_x100/(crossing_millis-previous_crossing_millis);
 	
-	if (ratio > 1)
-	{
-		ratio = ratio - (int)ratio;
-	}
+	progress = ReduceValue(progress, 1000);
 
-	curr_position = ratio * DIVISIONS;
+	curr_position = progress * DIVISIONS / 1000;
 
 	if (curr_position == last_position)
 	{
@@ -249,12 +264,11 @@ void loop()
 
 
     // at current position LEDS(17...32] occupy pixels 0,2,4,6..
-	const int curr_position_minus1 = curr_position-1;
+	const uint16_t curr_position_minus1 = curr_position-1;
 
 	uint8_t j = 0; // LED 0's Red col
 	for(i = NUM_LEDS_div2; i<NUM_LEDS; i++)
 	{
-		//uint8_t j = (i-led_offset)*2*3;
 		R = pgm_read_byte(&(IMAGE[curr_position_minus1][j++]));
 		G = pgm_read_byte(&(IMAGE[curr_position_minus1][j++]));
 		B = pgm_read_byte(&(IMAGE[curr_position_minus1][j]));
@@ -275,7 +289,6 @@ void loop()
 	uint8_t k = 3;  // LED 1's Red Col
 	for(i = NUM_LEDS_div2-1; i >=0 ; i--)
 	{
-		//uint8_t j = ((led_offset-i)*2-1)*3;
 		R = pgm_read_byte(&(IMAGE[position][k++]));
 		G = pgm_read_byte(&(IMAGE[position][k++]));
 		B = pgm_read_byte(&(IMAGE[position][k]));
