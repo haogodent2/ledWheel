@@ -395,6 +395,7 @@ void setup()
   ns_stick.setBrightness(BRIGHTNESS);  // range: 0 ~ 255, default: 255  
   pinMode(INTERRUPT_PIN, INPUT_PULLUP);
   attachInterrupt(digitalPinToInterrupt(INTERRUPT_PIN), OnCrossingUpdate, RISING); 
+  Serial.begin(9600);
 }
 
 void loop() 
@@ -415,13 +416,16 @@ void loop()
       uint8_t R = pgm_read_byte(&(IMAGE[curr_position][idx*3]));
       uint8_t G = pgm_read_byte(&(IMAGE[curr_position][idx*3+1]));
       uint8_t B = pgm_read_byte(&(IMAGE[curr_position][idx*3+2]));
-        //ns_stick.setColor(idx, IMAGE[curr_position][idx*3],IMAGE[curr_position][idx*3+1],IMAGE[curr_position][idx*3+2]);    
-        ns_stick.setColor(idx, R, G, B);
+      ns_stick.setColor(idx, R, G, B);
      }
 
       last_position = curr_position;
       ns_stick.show(); 
+
     }
+    Serial.print('test: ');
+    Serial.println(crossing_millis);
+    delay(1000);
 }  
 
 
