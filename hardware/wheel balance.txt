@@ -1,0 +1,6 @@
+arduino 5.9g
+led strip = 6.33 g
+battery = 6g
+
+
+
